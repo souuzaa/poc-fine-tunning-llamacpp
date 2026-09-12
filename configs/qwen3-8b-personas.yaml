@@ -8,7 +8,7 @@ model:
 
 data:
   hf_dataset: nvidia/Nemotron-Personas-Brazil
-  n_train: 20000
+  n_train: 10000  # ADR 0012: measured 39.2 s/step -> ~6.8h
   n_val: 500
   n_test: 200
   seed: 3407

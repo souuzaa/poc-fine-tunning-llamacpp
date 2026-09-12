@@ -1,7 +1,11 @@
 # ADR 0009 — Training budget: 20k examples, one epoch
 
-- **Status:** Accepted
+- **Status:** Superseded by [ADR 0012](0012-revised-training-budget.md)
 - **Date:** 2026-09-12
+
+> The throughput estimate below was never measured. A smoke
+> run on the real hardware came in 2.4x slower, repricing this budget at ~13.6h.
+> See ADR 0012.
 
 ## Context
 

@@ -20,6 +20,6 @@ def test_effective_batch_size_is_sixteen():
     assert effective == 16
 
 
-def test_splits_are_the_budget_from_adr_0009():
+def test_splits_are_the_budget_from_adr_0012():
     cfg = load_config(CONFIG)
-    assert (cfg.data.n_train, cfg.data.n_val, cfg.data.n_test) == (20000, 500, 200)
+    assert (cfg.data.n_train, cfg.data.n_val, cfg.data.n_test) == (10000, 500, 200)
