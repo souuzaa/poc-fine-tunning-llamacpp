@@ -12,8 +12,12 @@ train = [
     # Unsloth is the anchor; it tightly constrains transformers/trl/peft/datasets.
     # Resolve those as a unit rather than pinning them independently (ADR 0011) --
     # exact resolved versions are recorded in the committed uv.lock.
-    "torch==2.8.0",
-    "unsloth==2025.9.1",
+    "torch>=2.8",
+    # Declared explicitly (not for our own use) so that [tool.uv.sources] applies to it:
+    # source mappings only affect DIRECT dependencies, and transformers pulls torchvision
+    # in transitively from PyPI, where it is built against a different CUDA major.
+    "torchvision",
+    "unsloth",
     "unsloth-zoo",
     "trl",
     "peft",
@@ -44,7 +48,10 @@ url = "https://download.pytorch.org/whl/cu128"
 explicit = true
 
 [tool.uv.sources]
+# torchvision MUST come from the same index as torch: transformers imports it, and a
+# torchvision built against a different CUDA major version aborts the import.
 torch = { index = "pytorch-cu128" }
+torchvision = { index = "pytorch-cu128" }
 
 [build-system]
 requires = ["hatchling"]
