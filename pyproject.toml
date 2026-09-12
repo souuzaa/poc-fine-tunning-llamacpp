@@ -30,6 +30,10 @@ eval = [
 ]
 dev = [
     "pytest>=8.3.0",
+    # Build tooling for llama.cpp, installed into the venv so the project needs no
+    # system packages beyond a C++ compiler and the CUDA toolkit.
+    "cmake>=3.28",
+    "ninja>=1.11",
 ]
 
 # torch cu128 wheels: sm_86 is supported and driver 595 is backward compatible with
