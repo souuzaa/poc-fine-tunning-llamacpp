@@ -1,0 +1,11 @@
+.venv/
+vendor/
+data/
+outputs/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+*.gguf
+*.safetensors
+.env
