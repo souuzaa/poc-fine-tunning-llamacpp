@@ -52,8 +52,19 @@ def test_build_record_injects_the_extracted_name():
     assert "Marcos Antunes" in record["prompt"]
 
 
-def test_build_record_returns_none_when_the_name_cannot_be_extracted():
+def test_build_record_falls_back_to_another_column_for_the_name():
+    """A nameless `persona` is fine as long as another narrative column names them."""
     row = dict(ROW, persona="uma pessoa comum que trabalha muito")
+    record = prepare_data.build_record(row, FakeTokenizer())
+    assert record is not None
+    assert record["attributes"]["name"] == "Marcos Antunes"
+
+
+def test_build_record_returns_none_when_no_column_has_a_name():
+    row = dict(ROW, persona="uma pessoa comum que trabalha muito")
+    for column in ("professional_persona", "cultural_background", "skills_and_expertise",
+                   "hobbies_and_interests", "career_goals_and_ambitions"):
+        row[column] = "trabalha muito e gosta de futebol."
     assert prepare_data.build_record(row, FakeTokenizer()) is None
 
 

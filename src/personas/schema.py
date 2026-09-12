@@ -17,6 +17,20 @@ SECTIONS: tuple[tuple[str, str], ...] = (
     ("Objetivos de carreira", "career_goals_and_ambitions"),
 )
 
+# Narrative columns consulted when extracting the name (ADR 0005). The lifestyle facets
+# are not training targets, but they are extra confirmation signal for mononyms.
+NAME_SOURCE_COLUMNS: tuple[str, ...] = (
+    "professional_persona",
+    "cultural_background",
+    "skills_and_expertise",
+    "hobbies_and_interests",
+    "career_goals_and_ambitions",
+    "sports_persona",
+    "arts_persona",
+    "travel_persona",
+    "culinary_persona",
+)
+
 ATTRIBUTE_COLUMNS: tuple[str, ...] = (
     "sex",
     "age",

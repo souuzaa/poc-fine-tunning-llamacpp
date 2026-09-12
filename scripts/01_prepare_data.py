@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import random
 import sys
 from collections import Counter
@@ -24,12 +25,24 @@ from personas.prompt import (  # noqa: E402
     render_prompt,
     render_training_text,
 )
-from personas.schema import SECTIONS, PersonaAttributes  # noqa: E402
+from personas.schema import (  # noqa: E402
+    NAME_SOURCE_COLUMNS,
+    SECTIONS,
+    PersonaAttributes,
+)
+
+
+def name_for(row: dict) -> str | None:
+    """Extract the name, falling back to the other narrative columns (ADR 0005)."""
+    return extract_name(
+        str(row.get("persona") or ""),
+        [str(row.get(column) or "") for column in NAME_SOURCE_COLUMNS],
+    )
 
 
 def build_record(row: dict, tokenizer) -> dict | None:
     """Turn a source row into a training record, or None if it is unusable."""
-    name = extract_name(str(row.get("persona") or ""))
+    name = name_for(row)
     if name is None:
         return None
     for _, column in SECTIONS:
@@ -116,7 +129,7 @@ def main() -> int:
         seen += 1
         if seen > scan_limit or len(records) >= target_count:
             break
-        if extract_name(str(row.get("persona") or "")) is None:
+        if name_for(row) is None:
             dropped_name += 1
             continue
         record = build_record(row, tokenizer)
@@ -179,4 +192,12 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    code = main()
+    # `datasets` streaming leaves a reader thread that aborts the process during
+    # interpreter finalization ("PyGILState_Release: thread state must be current"),
+    # turning a successful run into exit code 134. It reproduces in four lines with
+    # none of our code, and explicit cleanup does not help. Every output is already
+    # flushed to disk by this point, so skipping finalization costs nothing.
+    sys.stdout.flush()
+    sys.stderr.flush()
+    os._exit(code)
