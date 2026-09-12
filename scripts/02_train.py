@@ -22,6 +22,9 @@ from pathlib import Path
 # against a multi-hour run. Must be set before torch is imported.
 os.environ.setdefault("TORCHINDUCTOR_COMPILE_THREADS", "4")
 os.environ.setdefault("OMP_NUM_THREADS", "8")
+# Training sits at ~8GB of ~9.5GB free, so the allocator has little room to manoeuvre;
+# expandable segments avoid fragmentation stalling an otherwise-fitting allocation.
+os.environ.setdefault("PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True")
 
 import unsloth  # noqa: E402,F401  # must precede transformers/trl -- it patches on import
 from unsloth import FastLanguageModel
@@ -126,6 +129,12 @@ def main() -> int:
             max_length=cfg.model.max_seq_length,
             packing=False,  # response-only loss requires unpacked sequences
             per_device_train_batch_size=cfg.train.per_device_train_batch_size,
+            per_device_eval_batch_size=cfg.train.per_device_eval_batch_size,
+            # Keep only the loss from eval. Without this the trainer accumulates logits
+            # for the whole eval set -- vocab 151936 wide -- and OOMs a GPU that just
+            # finished training fine.
+            prediction_loss_only=True,
+            group_by_length=cfg.train.group_by_length,
             gradient_accumulation_steps=cfg.train.gradient_accumulation_steps,
             num_train_epochs=cfg.train.num_train_epochs,
             learning_rate=cfg.train.learning_rate,
