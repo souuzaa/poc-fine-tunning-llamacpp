@@ -10,11 +10,20 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 import time
 from pathlib import Path
 
-import unsloth  # noqa: F401  # must precede transformers/trl -- it patches them on import
+# torch inductor spawns one compile worker per CPU core -- 16 separate Python processes
+# on this machine -- when kernels are JIT-compiled at the first training step. That spike
+# can exhaust system RAM before training has allocated anything real, killing the run
+# minutes in. Cap it; compilation happens once and a few seconds slower costs nothing
+# against a multi-hour run. Must be set before torch is imported.
+os.environ.setdefault("TORCHINDUCTOR_COMPILE_THREADS", "4")
+os.environ.setdefault("OMP_NUM_THREADS", "8")
+
+import unsloth  # noqa: E402,F401  # must precede transformers/trl -- it patches on import
 from unsloth import FastLanguageModel
 from unsloth.chat_templates import train_on_responses_only
 

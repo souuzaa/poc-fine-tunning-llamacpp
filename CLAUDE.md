@@ -54,6 +54,25 @@ multi-hour training run.
 Training budget is ~7.7-8.3GB of ~9.5GB free. If it OOMs, in order: batch 1 with
 grad-accum 16 → `max_seq_length` 1536 → stop the GNOME session to reclaim 2.7GB.
 
+## Operational gotchas found the hard way
+
+- **System RAM, not VRAM, killed the first training run.** torch inductor spawns one
+  compile worker per CPU core (16 here) when kernels are JIT-compiled at the first step.
+  `scripts/02_train.py` caps `TORCHINDUCTOR_COMPILE_THREADS=4` before importing torch.
+  Keep that cap, and keep it above the torch import.
+- **Never pin `unsloth` without pinning `unsloth-zoo`.** They move together. Pinning one
+  resolved an 8-month-old Unsloth against transformers 5.17, whose zoo needed a torch
+  symbol that did not exist yet. Let the resolver pick the coupled set as a unit.
+- **`torchvision` must come from the same index as `torch`.** transformers imports it, and
+  a build against a different CUDA major aborts the import. It is declared as a direct
+  dependency purely so `[tool.uv.sources]` applies — source mappings do not reach
+  transitive dependencies.
+- **`datasets` streaming aborts the process at interpreter shutdown**, turning a
+  successful run into exit 134. `scripts/01_prepare_data.py` exits via `os._exit` after
+  flushing.
+- **Never pipe a long-running script through `tail`** to inspect it — the pipeline's exit
+  code is `tail`'s, so failures report as success. Redirect to a file instead.
+
 ## Data note
 
 The dataset is CC-BY-4.0 and **fully synthetic** — no real PII, despite being "person
