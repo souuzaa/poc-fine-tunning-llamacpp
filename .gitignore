@@ -9,3 +9,6 @@ __pycache__/
 *.gguf
 *.safetensors
 .env
+
+# Unsloth writes patched trainer sources here at import time; regenerated on every run.
+unsloth_compiled_cache/
