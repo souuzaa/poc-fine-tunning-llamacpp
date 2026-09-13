@@ -151,6 +151,10 @@ def main() -> int:
             weight_decay=cfg.train.weight_decay,
             bf16=True,
             fp16=False,
+            # Pinned host memory is non-swappable and the run has been killed twice by
+            # the system memory watchdog. The copy speedup is irrelevant next to a
+            # 40s/step compute cost.
+            dataloader_pin_memory=False,
             logging_steps=cfg.train.logging_steps,
             eval_strategy="steps",
             eval_steps=cfg.train.eval_steps,
