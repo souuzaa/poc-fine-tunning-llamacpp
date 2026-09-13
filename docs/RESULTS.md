@@ -19,6 +19,41 @@ together — convergence without overfitting:
 |---|---|---|---|---|---|---|
 | Eval loss | 0.9454 | 0.8900 | 0.8603 | 0.8417 | 0.8308 | **0.8267** |
 
+## Process metrics
+
+Every stage, measured end to end on one RTX 3060 12GB.
+
+| Stage | Wall clock | Notes |
+|---|---|---|
+| Environment + llama.cpp CUDA build | ~25 min | download-bound; `sm_86` only |
+| Data preparation | ~3 min | streamed 10,708 rows, 0.1% dropped |
+| **Fine-tuning** | **7h 25m** | 625 steps at 42.7 s/step |
+| GGUF export (per model) | **6m 26s** | merge → f16 GGUF → Q4_K_M + Q8_0 |
+| Evaluation | **46m 19s** | 200 rows × 2 models, sequential |
+| Report | < 1s | |
+| **Total** | **≈ 9h** | |
+
+Evaluation breakdown:
+
+| | Base | Fine-tuned |
+|---|---|---|
+| 200 generations | 1050 s (5.3 s/row) | 1610 s (8.1 s/row) |
+| Mean output | 2093 chars | 3072 chars |
+
+The tuned model is ~50% slower per row because it produces ~50% more text — it fills all six
+sections rather than stopping early. Single-stream generation is ~58 tok/s at `-ngl 99`.
+
+### Estimate vs measurement
+
+| | Estimated | Measured | |
+|---|---|---|---|
+| Throughput | 1000-1400 tok/s | ~570 tok/s | 2.4× optimistic |
+| Training (20k rows) | 3-5h | ~13.6h | budget cut to 10k ([ADR 0012](adr/0012-revised-training-budget.md)) |
+| Peak VRAM | 7.7-8.3 GB | 9.07 GB | evaluation runs alongside the training allocation |
+
+The throughput estimate in ADR 0009 was never measured; a 160-row smoke run disproved it in
+7 minutes, and the budget was re-derived before committing a night of GPU time.
+
 ## Base vs fine-tuned
 
 200 held-out rows, Q4_K_M through the same quantisation lineage, identical decoding
