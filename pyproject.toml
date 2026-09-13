@@ -1,0 +1,66 @@
+[project]
+name = "personas"
+version = "0.1.0"
+description = "Qwen3-8B QLoRA fine-tune on Brazilian persona data, evaluated through llama.cpp"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "pyyaml>=6.0.2",
+]
+
+[project.optional-dependencies]
+train = [
+    # Unsloth is the anchor; it tightly constrains transformers/trl/peft/datasets.
+    # Resolve those as a unit rather than pinning them independently (ADR 0011) --
+    # exact resolved versions are recorded in the committed uv.lock.
+    "torch>=2.8",
+    # Declared explicitly (not for our own use) so that [tool.uv.sources] applies to it:
+    # source mappings only affect DIRECT dependencies, and transformers pulls torchvision
+    # in transitively from PyPI, where it is built against a different CUDA major.
+    "torchvision",
+    "unsloth",
+    "unsloth-zoo",
+    "trl",
+    "peft",
+    "transformers",
+    "datasets",
+    "bitsandbytes",
+    "accelerate",
+    "huggingface-hub>=0.34.0",
+    "pyarrow>=17.0.0",
+]
+eval = [
+    "langchain-core==0.3.75",
+    "httpx==0.28.1",
+]
+dev = [
+    "pytest>=8.3.0",
+    # Build tooling for llama.cpp, installed into the venv so the project needs no
+    # system packages beyond a C++ compiler and the CUDA toolkit.
+    "cmake>=3.28",
+    "ninja>=1.11",
+]
+
+# torch cu128 wheels: sm_86 is supported and driver 595 is backward compatible with
+# the CUDA 12.8 runtime, so the host's 13.3 toolkit is irrelevant here (ADR 0011).
+[[tool.uv.index]]
+name = "pytorch-cu128"
+url = "https://download.pytorch.org/whl/cu128"
+explicit = true
+
+[tool.uv.sources]
+# torchvision MUST come from the same index as torch: transformers imports it, and a
+# torchvision built against a different CUDA major version aborts the import.
+torch = { index = "pytorch-cu128" }
+torchvision = { index = "pytorch-cu128" }
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/personas"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+markers = ["slow: requires downloading the tokenizer"]
