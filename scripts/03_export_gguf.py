@@ -11,6 +11,7 @@ LoRA weights, not by quantisation lineage or converter version.
 from __future__ import annotations
 
 import argparse
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -69,7 +70,20 @@ def main() -> int:
     merged_dir = outputs / f"merged-16bit-{args.which}"
     f16_path = gguf_dir / f"personas-{args.which}-f16.gguf"
 
-    # Step 1 -- fp16 weights on disk
+    # Step 1 -- fp16 weights on disk.
+    # Reuse is for resumability, but a merge older than the adapter it came from is
+    # STALE: retraining and re-exporting would silently ship the previous model and
+    # invalidate every number in the evaluation. Detect it and re-merge.
+    if args.which == "tuned" and (merged_dir / "config.json").exists():
+        adapter_weights = Path(cfg.paths.outputs_dir) / "adapter" / "adapter_model.safetensors"
+        if (adapter_weights.exists()
+                and adapter_weights.stat().st_mtime > (merged_dir / "config.json").stat().st_mtime):
+            print(f">> {merged_dir} is older than the adapter -- discarding stale merge")
+            shutil.rmtree(merged_dir)
+            f16_path.unlink(missing_ok=True)
+            for quant in QUANTS:
+                (gguf_dir / f"personas-tuned-{quant.lower()}.gguf").unlink(missing_ok=True)
+
     if not (merged_dir / "config.json").exists():
         print(f">> materialising fp16 weights for '{args.which}' (~16GB, RAM peak ~17GB)")
         if args.which == "tuned":
