@@ -40,6 +40,10 @@ train:
   weight_decay: 0.01
   logging_steps: 10
   eval_steps: 100
+  # Validation is 500 rows, but a full pass costs ~12 min of wall clock and runs 6 times
+  # -- 75 minutes on a 6.8h run, for a loss estimate that is already stable well before
+  # then. Subsample it; val.jsonl stays complete on disk.
+  eval_subset_rows: 150
   save_steps: 250
   save_total_limit: 3
   seed: 3407

@@ -107,6 +107,13 @@ def main() -> int:
         },
     )
 
+    # A full validation pass is pure wall clock: it does not improve the model, and the
+    # mean loss over a few hundred rows is already stable. Cap it.
+    eval_rows = getattr(cfg.train, "eval_subset_rows", None)
+    if eval_rows and len(splits["validation"]) > eval_rows:
+        splits["validation"] = splits["validation"].select(range(eval_rows))
+        print(f">> evaluating on a {eval_rows}-row subset of validation")
+
     outputs = Path(cfg.paths.outputs_dir)
     (outputs / "adapter").mkdir(parents=True, exist_ok=True)
 
